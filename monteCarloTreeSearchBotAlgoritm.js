@@ -25,7 +25,8 @@ import {
     getBoard,
     setBoard,
     setCurrentPlayer,
-    makeBotMove,
+    applyBotMove,
+    applyMove
 } from "./baseGame.js";
 
 // Monte Carlo Tree Search Implementation
@@ -104,22 +105,6 @@ function getLegalMoves(state) {
     return legalMoves;
 }
 
-// Function to apply a move to the state and return the new state
-export function applyMove(state, move, player) {
-    const newBoard = state.map((row) => [...row]); // Create a deep copy of the board
-
-    // Find the first available row in the selected column
-    let row = rows - 1;
-    while (row >= 0 && newBoard[row][move] !== 0) {
-        row--;
-    }
-
-    if (row >= 0) {
-        newBoard[row][move] = player; // Place the player's piece in the selected column
-    }
-
-    return newBoard;
-}
 
 // Function to get the winner of the game from the given state
 function getWinner(state) {
@@ -144,18 +129,17 @@ function getWinner(state) {
 }
 
 // MCTS implementation with pre-check for immediate threats
-export function mcts(rootState) {
-    console.log(rootState);
+export function mcts(rootState, illegalMoves = []) {
     const rootNode = new Node(rootState);
     const currentPlayer = getPlayerTurn(rootState);
     const opponent = currentPlayer === playerRed ? playerYellow : playerRed;
 
     // Pre-check for immediate winning move for currentPlayer
-    const legalMoves = getLegalMoves(rootState);
+    const legalMoves = getLegalMoves(rootState).filter(move => !illegalMoves.includes(move));
+    console.log(legalMoves);
     for (let move of legalMoves) {
         if (isWinningMove(rootState, move, currentPlayer)) {
             console.log("winning move");
-            makeBotMove(applyMove(rootState, move, currentPlayer));
             return applyMove(rootState, move, currentPlayer); // Complete the winning move
         }
     }
@@ -164,7 +148,6 @@ export function mcts(rootState) {
     for (let move of legalMoves) {
         if (isWinningMove(rootState, move, opponent)) {
             console.log("blocking move");
-            makeBotMove(applyMove(rootState, move, currentPlayer));
             return applyMove(rootState, move, currentPlayer); // Block opponent's winning move
         }
     }
@@ -185,7 +168,7 @@ export function mcts(rootState) {
 
         // Expansion
         if (node.visits > 0) {
-            const legalMoves = getLegalMoves(node.state);
+            const legalMoves = getLegalMoves(node.state).filter(move => !illegalMoves.includes(move));
             legalMoves.forEach((move) => {
                 const newState = applyMove(node.state, move, getPlayerTurn(node.state));
                 const childNode = new Node(newState, node);
@@ -212,11 +195,9 @@ export function mcts(rootState) {
     }
 
     // Select the best move
-    console.log(iterations);
     const bestChild = rootNode.children.reduce((a, b) =>
         a.visits > b.visits ? a : b
     );
-    makeBotMove(bestChild.state);
     return bestChild.state;
 }
 

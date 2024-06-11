@@ -1,3 +1,12 @@
+import {
+    minimax,
+    depthLimit,
+} from "./minimaxBotAlgorithm.js";
+
+import {
+    mcts
+} from "./monteCarloTreeSearchBotAlgoritm.js";
+
 // Player constants
 export const playerRed = 1;
 export const playerYellow = 2;
@@ -221,7 +230,7 @@ export function setCurrentPlayer(newPlayer) {
     currPlayer = newPlayer;
 }
 
-export function makeBotMove(newState) {
+export function applyBotMove(newState) {
     if (!gameOver) {
         // Update the current board state to the new state
         setBoard(newState);
@@ -245,6 +254,75 @@ export function makeBotMove(newState) {
     }
 }
 
+export function calculateBotMove(board) {
+    const bestBotState = findBestMove(board);
+    applyBotMove(bestBotState);
+    console.log("done");
+}
+
+// Function to apply a move to the state and return the new state
+export function applyMove(state, move, player) {
+    const newBoard = state.map((row) => [...row]); // Create a deep copy of the board
+
+    // Find the first available row in the selected column
+    let row = rows - 1;
+    while (row >= 0 && newBoard[row][move] !== 0) {
+        row--;
+    }
+
+    if (row >= 0) {
+        newBoard[row][move] = player; // Place the player's piece in the selected column
+    }
+
+    return newBoard;
+}
+
+// Function to find the best move for the current player
+export function findBestMove(boardState, depth = depthLimit) {
+    let bestMove = -1;
+    let bestValue = -Infinity;
+    let allMovesEvaluatedSame = true;
+    let allMovesAreNegative100 = true;
+
+    const moveEvaluations = []; // Array to store the evaluation values of each move
+
+    for (let col = 0; col < columns; col++) {
+        if (board[0][col] === 0) {
+            const newBoard = applyMove(boardState, col, playerRed);
+            const moveValue = minimax(newBoard, depth, -Infinity, Infinity, false);
+            console.log(col + ": " + moveValue);
+            moveEvaluations.push(moveValue); // Store the evaluation value of the move
+            if (moveValue !== -100) {
+                allMovesAreNegative100 = false;
+            }
+            if (moveValue > bestValue) {
+                bestValue = moveValue;
+                bestMove = col;
+                allMovesEvaluatedSame = false;
+            } else if (moveValue !== bestValue) {
+                allMovesEvaluatedSame = false;
+            }
+        }
+    }
+
+    const illegalMoves = [];
+    for (let i = 0; i < moveEvaluations.length; i++) {
+        if (moveEvaluations[i] < bestValue) {
+            illegalMoves.push(i);
+        }
+    }
+
+    if (allMovesAreNegative100) {
+        return mcts(boardState);
+    } else if (allMovesEvaluatedSame) {
+        return mcts(boardState);
+    } else {
+        return mcts(boardState, illegalMoves);
+    }
+}
+
+
 window.setBotYellow = setBotYellow;
 window.getBoard = getBoard;
 window.setGame = setGame;
+window.calculateBotMove = calculateBotMove;

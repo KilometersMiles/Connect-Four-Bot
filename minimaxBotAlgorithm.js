@@ -25,15 +25,11 @@ import {
     getBoard,
     setBoard,
     setCurrentPlayer,
-    makeBotMove,
+    applyBotMove,
+    applyMove,
 } from "./baseGame.js";
 
-import {
-    applyMove,
-} from "/monteCarloTreeSearchBotAlgoritm.js";
-
-const depthLimit = 1; // Depth for pre-computation
-var iterationsOfMinimax = 0;
+export const depthLimit = 7; // Depth for pre-computation
 let preComputedPositions = {};
 
 // Function to convert a 2D board array into a string key
@@ -60,9 +56,7 @@ export function getPreComputedMove(board) {
 }
 
 // Minimax with Alpha-Beta Pruning
-function minimax(board, depth, alpha, beta, maximizingPlayer) {
-    iterationsOfMinimax++;
-    console.log(iterationsOfMinimax);
+export function minimax(board, depth, alpha, beta, maximizingPlayer) {
     const winner = checkWinnerFromState(board);
     if (winner !== null) {
         return winner === playerRed ? 100 : -100;
@@ -79,7 +73,9 @@ function minimax(board, depth, alpha, beta, maximizingPlayer) {
                 const evaluation = minimax(newBoard, depth - 1, alpha, beta, false);
                 maxEval = Math.max(maxEval, evaluation);
                 alpha = Math.max(alpha, evaluation);
-                if (beta <= alpha) break; // Beta cut-off
+                if (beta <= alpha) {
+                    break;
+                } // Beta cut-off
             }
         }
         return maxEval;
@@ -91,28 +87,13 @@ function minimax(board, depth, alpha, beta, maximizingPlayer) {
                 const evaluation = minimax(newBoard, depth - 1, alpha, beta, true);
                 minEval = Math.min(minEval, evaluation);
                 beta = Math.min(beta, evaluation);
-                if (beta <= alpha) break; // Alpha cut-off
+                if (beta <= alpha) {
+                    break;
+                } // Alpha cut-off
             }
         }
         return minEval;
     }
-}
-
-// Function to find the best move for the current player
-function findBestMove(board, depth = depthLimit) {
-    let bestMove = -1;
-    let bestValue = -Infinity;
-    for (let col = 0; col < columns; col++) {
-        if (board[0][col] === 0) {
-            const newBoard = applyMove(board, col, playerRed);
-            const moveValue = minimax(newBoard, depth, -Infinity, Infinity, true);
-            if (moveValue > bestValue) {
-                bestValue = moveValue;
-                bestMove = col;
-            }
-        }
-    }
-    return bestMove;
 }
 
 // Function to pre-compute moves for the first N plies
@@ -154,15 +135,8 @@ export function displayPrecomputedMoves() {
         .map(([key, move]) => `preComputedPositions["${key}"] = ${move};`)
         .join("\n");
     document.getElementById("precomputed-moves").innerText = precomputedData;
-    console.log("done");
 }
 
 export function go() {
     preComputeMoves(initialState, 1);
 }
-
-window.getPreComputedMove = getPreComputedMove;
-window.preComputeMoves = preComputeMoves;
-window.displayPrecomputedMoves = displayPrecomputedMoves;
-window.go = go;
-window.parseBoardKey =parseBoardKey;
