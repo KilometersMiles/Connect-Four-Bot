@@ -1,5 +1,0 @@
-var preComputedPositions = {
-    "000000000000000000000000000000000000000000": 3,
-    "100000000000000000000000000000000000000000": 4,
-    // Add more precomputed positions here
-  };
