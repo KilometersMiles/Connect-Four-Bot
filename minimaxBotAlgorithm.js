@@ -29,7 +29,7 @@ import {
     applyMove,
 } from "./baseGame.js";
 
-export const depthLimit = 7; // Depth for pre-computation
+export const depthLimit = 8; // Depth for pre-computation
 let preComputedPositions = {};
 
 // Function to convert a 2D board array into a string key

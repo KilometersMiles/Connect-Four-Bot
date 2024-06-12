@@ -291,7 +291,7 @@ export function findBestMove(boardState, depth = depthLimit) {
             const newBoard = applyMove(boardState, col, playerRed);
             const moveValue = minimax(newBoard, depth, -Infinity, Infinity, false);
             console.log(col + ": " + moveValue);
-            moveEvaluations.push(moveValue); // Store the evaluation value of the move
+            moveEvaluations.push({ col, value: moveValue }); // Store the column index and evaluation value of the move
             if (moveValue !== -100) {
                 allMovesAreNegative100 = false;
             }
@@ -307,11 +307,11 @@ export function findBestMove(boardState, depth = depthLimit) {
 
     const illegalMoves = [];
     for (let i = 0; i < moveEvaluations.length; i++) {
-        if (moveEvaluations[i] < bestValue) {
-            illegalMoves.push(i);
+        if (moveEvaluations[i].value < bestValue) {
+            illegalMoves.push(moveEvaluations[i].col); // Push the column index of the move into illegalMoves
         }
     }
-
+    console.log("illegal moves: " + illegalMoves);
     if (allMovesAreNegative100) {
         return mcts(boardState);
     } else if (allMovesEvaluatedSame) {
@@ -320,7 +320,6 @@ export function findBestMove(boardState, depth = depthLimit) {
         return mcts(boardState, illegalMoves);
     }
 }
-
 
 window.setBotYellow = setBotYellow;
 window.getBoard = getBoard;

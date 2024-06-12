@@ -136,7 +136,7 @@ export function mcts(rootState, illegalMoves = []) {
 
     // Pre-check for immediate winning move for currentPlayer
     const legalMoves = getLegalMoves(rootState).filter(move => !illegalMoves.includes(move));
-    console.log(legalMoves);
+    console.log("legal moves: " + legalMoves);
     for (let move of legalMoves) {
         if (isWinningMove(rootState, move, currentPlayer)) {
             console.log("winning move");
@@ -153,7 +153,7 @@ export function mcts(rootState, illegalMoves = []) {
     }
 
     var startTime = performance.now();
-    var duration = 5000; // 5 seconds in milliseconds
+    var duration = 3000; // 5 seconds in milliseconds
     let iterations = 0;
 
     while (performance.now() - startTime < duration) {
