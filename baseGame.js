@@ -280,45 +280,61 @@ export function applyMove(state, move, player) {
 // Function to find the best move for the current player
 export function findBestMove(boardState, depth = depthLimit) {
     let bestMove = -1;
-    let bestValue = -Infinity;
+    let bestValue = botIdentity === playerRed ? -Infinity : Infinity;
     let allMovesEvaluatedSame = true;
     let allMovesAreNegative100 = true;
 
     const moveEvaluations = []; // Array to store the evaluation values of each move
 
     for (let col = 0; col < columns; col++) {
-        if (board[0][col] === 0) {
-            const newBoard = applyMove(boardState, col, playerRed);
-            const moveValue = minimax(newBoard, depth, -Infinity, Infinity, false);
+        if (boardState[0][col] === 0) {
+            // Apply the move based on the current player's identity
+            const newBoard = applyMove(boardState, col, currPlayer);
+
+            // Determine if we are maximizing or minimizing based on the bot's identity
+            let moveValue;
+            if (playerRed === botIdentity) {
+                // If it's the bot's turn, we are maximizing
+                moveValue = minimax(newBoard, depth - 1, -Infinity, Infinity, false);
+            } else {
+                // If it's the opponent's turn, we are minimizing
+                moveValue = minimax(newBoard, depth - 1, -Infinity, Infinity, true);
+            }
             console.log(col + ": " + moveValue);
+
             moveEvaluations.push({ col, value: moveValue }); // Store the column index and evaluation value of the move
             if (moveValue !== -100) {
                 allMovesAreNegative100 = false;
             }
-            if (moveValue > bestValue) {
-                bestValue = moveValue;
-                bestMove = col;
-                allMovesEvaluatedSame = false;
-            } else if (moveValue !== bestValue) {
-                allMovesEvaluatedSame = false;
+
+            if (botIdentity === playerRed) {
+                // Bot is Red: maximize the best value
+                if (moveValue > bestValue) {
+                    bestValue = moveValue;
+                    bestMove = col;
+                    allMovesEvaluatedSame = false;
+                } else if (moveValue !== bestValue) {
+                    allMovesEvaluatedSame = false;
+                }
+            } else {
+                // Bot is Yellow: minimize the best value
+                if (moveValue < bestValue) {
+                    bestValue = moveValue;
+                    bestMove = col;
+                    allMovesEvaluatedSame = false;
+                } else if (moveValue !== bestValue) {
+                    allMovesEvaluatedSame = false;
+                }
             }
         }
     }
 
-    const illegalMoves = [];
-    for (let i = 0; i < moveEvaluations.length; i++) {
-        if (moveEvaluations[i].value < bestValue) {
-            illegalMoves.push(moveEvaluations[i].col); // Push the column index of the move into illegalMoves
-        }
-    }
+    const illegalMoves = moveEvaluations.filter(mv => (botIdentity === playerRed ? mv.value < bestValue : mv.value > bestValue)).map(mv => mv.col);
+    
     console.log("illegal moves: " + illegalMoves);
-    if (allMovesAreNegative100) {
-        return mcts(boardState);
-    } else if (allMovesEvaluatedSame) {
-        return mcts(boardState);
-    } else {
-        return mcts(boardState, illegalMoves);
-    }
+
+    // Use MCTS but avoid illegal moves
+    return mcts(boardState, illegalMoves);
 }
 
 window.setBotYellow = setBotYellow;

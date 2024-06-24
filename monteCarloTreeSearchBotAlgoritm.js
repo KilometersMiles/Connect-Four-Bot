@@ -153,7 +153,7 @@ export function mcts(rootState, illegalMoves = []) {
     }
 
     var startTime = performance.now();
-    var duration = 3000; // 5 seconds in milliseconds
+    var duration = 3000; // 3 seconds in milliseconds
     let iterations = 0;
 
     while (performance.now() - startTime < duration) {
@@ -193,7 +193,7 @@ export function mcts(rootState, illegalMoves = []) {
             node = node.parent;
         }
     }
-
+    console.log(iterations);
     // Select the best move
     const bestChild = rootNode.children.reduce((a, b) =>
         a.visits > b.visits ? a : b
