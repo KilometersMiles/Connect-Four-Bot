@@ -1,0 +1,646 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Connect 4</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+        // Player constants
+        const playerRed = 1;
+        const playerYellow = 2;
+        let currPlayer = playerRed;
+
+        var botIdentity = 1;
+
+        let gameOver = false;
+        var board;
+
+        const rows = 6;
+        const columns = 7;
+        let currColumns = []; // keeps track of which row each column is at.
+
+        // Starts game
+        window.onload = function () {
+            setGame();
+        };
+
+        function setBotYellow() {
+            var checkBox = document.getElementById("botIdentity");
+            if (checkBox.checked == true) {
+                botIdentity = 2;
+            } else {
+                botIdentity = 1;
+            }
+        }
+
+        function setGame() {
+            gameOver = false;
+            board = [];
+            currColumns = Array(columns).fill(rows - 1);
+
+            // Initialize the board state
+            for (let r = 0; r < rows; r++) {
+                let row = [];
+                for (let c = 0; c < columns; c++) {
+                    row.push(0); // Use 0 to represent empty spaces
+                }
+                board.push(row);
+            }
+
+            // Clear previous board and display the current board
+            displayBoard();
+
+            document.getElementById("winner").innerText = ""; // Clear previous winner message
+            logBoardState(); // Log the initial state of the board
+            currPlayer = playerRed;
+        }
+
+        function setPiece() {
+            if (gameOver) return;
+
+            let [r, c] = this.id.split("-").map(Number);
+            r = currColumns[c];
+
+            if (r < 0) return;
+
+            board[r][c] = currPlayer; // Update the board state
+            currPlayer = currPlayer === playerRed ? playerYellow : playerRed;
+
+            currColumns[c]--;
+
+            // Display the updated board state
+            displayBoard();
+
+            const winner = checkWinnerFromState(board);
+            if (winner) {
+                setWinner(winner);
+            } else if (isBoardFull(board)) {
+                setDraw();
+            }
+        }
+
+        function checkWinnerFromState(board) {
+            // Check horizontal, vertical, and both diagonals for a winner
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < columns; c++) {
+                    if (board[r][c] !== 0) {
+                        if (
+                            checkDirection(board, r, c, 1, 0) || // Horizontal
+                            checkDirection(board, r, c, 0, 1) || // Vertical
+                            checkDirection(board, r, c, 1, 1) || // Anti-diagonal
+                            checkDirection(board, r, c, 1, -1)
+                        ) {
+                            // Diagonal
+                            return board[r][c];
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        function checkDirection(board, r, c, dr, dc) {
+            let player = board[r][c];
+            for (let i = 1; i < 4; i++) {
+                let newRow = r + dr * i;
+                let newCol = c + dc * i;
+                if (
+                    newRow < 0 ||
+                    newRow >= rows ||
+                    newCol < 0 ||
+                    newCol >= columns ||
+                    board[newRow][newCol] !== player
+                ) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function isBoardFull(board) {
+            for (let c = 0; c < columns; c++) {
+                if (board[0][c] === 0) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function setWinner(winner) {
+            let winnerText = document.getElementById("winner");
+            winnerText.innerText = winner === playerRed ? "Red Wins" : "Yellow Wins";
+            gameOver = true;
+            disableBoard();
+        }
+
+        function setDraw() {
+            let winnerText = document.getElementById("winner");
+            winnerText.innerText = "It's a Draw!";
+            gameOver = true;
+            disableBoard();
+        }
+
+        function disableBoard() {
+            document
+                .querySelectorAll(".tile")
+                .forEach((tile) => tile.removeEventListener("click", setPiece));
+        }
+
+        function logBoardState() {
+            console.log(board);
+        }
+
+        function displayBoard() {
+            document.getElementById("board").innerHTML = ""; // Clear previous board
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < columns; c++) {
+                    let tile = document.createElement("div");
+                    tile.id = `${r}-${c}`;
+                    tile.classList.add("tile");
+                    if (board[r][c] === playerRed) {
+                        tile.classList.add("red-piece");
+                    } else if (board[r][c] === playerYellow) {
+                        tile.classList.add("yellow-piece");
+                    }
+                    tile.addEventListener("click", setPiece);
+                    document.getElementById("board").append(tile);
+                }
+            }
+        }
+
+        function getPlayerTurn(board) {
+            let player1Count = 0;
+            let player2Count = 0;
+
+            // Count the number of player 1's and player 2's pieces on the board
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < columns; c++) {
+                    if (board[r][c] === playerRed) {
+                        player1Count++;
+                    } else if (board[r][c] === playerYellow) {
+                        player2Count++;
+                    }
+                }
+            }
+
+            // Determine which player's turn it is based on the counts
+            return player1Count <= player2Count ? playerRed : playerYellow;
+        }
+
+        function setBoardState(newState) {
+            if (newState.length !== rows || newState[0].length !== columns) {
+                console.error("Invalid board state dimensions.");
+                return;
+            }
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < columns; c++) {
+                    board[r][c] = newState[r][c];
+                }
+            }
+
+            // Update the display to reflect the new board state
+            displayBoard();
+        }
+
+        function updateCurrColumns() {
+            currColumns = Array(columns).fill(rows - 1);
+            for (let c = 0; c < columns; c++) {
+                for (let r = 0; r < rows; r++) {
+                    if (board[r][c] !== 0) {
+                        currColumns[c] = r - 1;
+                        break;
+                    }
+                }
+            }
+        }
+
+        function getBoard() {
+            return board;
+        }
+
+        function setBoard(newBoard) {
+            board = newBoard;
+        }
+
+        function setCurrentPlayer(newPlayer) {
+            currPlayer = newPlayer;
+        }
+
+        function applyBotMove(newState) {
+            if (!gameOver) {
+                // Update the current board state to the new state
+                setBoard(newState);
+
+                // Recalculate the column heights in currColumns based on the new board state
+                updateCurrColumns();
+
+                // Display the updated board state
+                displayBoard();
+
+                // Check for a winner or draw
+                const winner = checkWinnerFromState(board);
+                if (winner) {
+                    setWinner(winner);
+                } else if (isBoardFull(board)) {
+                    setDraw();
+                }
+
+                // Switch the current player
+                setCurrentPlayer(currPlayer === playerRed ? playerYellow : playerRed);
+            }
+        }
+
+        function calculateBotMove(board) {
+            const bestBotState = findBestMove(board);
+            applyBotMove(bestBotState);
+            console.log("done");
+        }
+
+        // Function to apply a move to the state and return the new state
+        function applyMove(state, move, player) {
+            const newBoard = state.map((row) => [...row]); // Create a deep copy of the board
+
+            // Find the first available row in the selected column
+            let row = rows - 1;
+            while (row >= 0 && newBoard[row][move] !== 0) {
+                row--;
+            }
+
+            if (row >= 0) {
+                newBoard[row][move] = player; // Place the player's piece in the selected column
+            }
+
+            return newBoard;
+        }
+
+        // Function to find the best move for the current player
+        function findBestMove(boardState, depth = depthLimit) {
+            let bestMove = -1;
+            let bestValue = botIdentity === playerRed ? -Infinity : Infinity;
+            let allMovesEvaluatedSame = true;
+            let allMovesAreNegative100 = true;
+
+            const moveEvaluations = []; // Array to store the evaluation values of each move
+
+            for (let col = 0; col < columns; col++) {
+                if (boardState[0][col] === 0) {
+                    // Apply the move based on the current player's identity
+                    const newBoard = applyMove(boardState, col, currPlayer);
+
+                    // Determine if we are maximizing or minimizing based on the bot's identity
+                    let moveValue;
+                    if (playerRed === botIdentity) {
+                        // If it's the bot's turn, we are maximizing
+                        moveValue = minimax(newBoard, depth - 1, -Infinity, Infinity, false);
+                    } else {
+                        // If it's the opponent's turn, we are minimizing
+                        moveValue = minimax(newBoard, depth - 1, -Infinity, Infinity, true);
+                    }
+                    console.log(col + ": " + moveValue);
+
+                    moveEvaluations.push({ col, value: moveValue }); // Store the column index and evaluation value of the move
+                    if (moveValue !== -100) {
+                        allMovesAreNegative100 = false;
+                    }
+
+                    if (botIdentity === playerRed) {
+                        // Bot is Red: maximize the best value
+                        if (moveValue > bestValue) {
+                            bestValue = moveValue;
+                            bestMove = col;
+                            allMovesEvaluatedSame = false;
+                        } else if (moveValue !== bestValue) {
+                            allMovesEvaluatedSame = false;
+                        }
+                    } else {
+                        // Bot is Yellow: minimize the best value
+                        if (moveValue < bestValue) {
+                            bestValue = moveValue;
+                            bestMove = col;
+                            allMovesEvaluatedSame = false;
+                        } else if (moveValue !== bestValue) {
+                            allMovesEvaluatedSame = false;
+                        }
+                    }
+                }
+            }
+
+            const illegalMoves = moveEvaluations.filter(mv => (botIdentity === playerRed ? mv.value < bestValue : mv.value > bestValue)).map(mv => mv.col);
+            
+            console.log("illegal moves: " + illegalMoves);
+
+            // Use MCTS but avoid illegal moves
+            return mcts(boardState, illegalMoves);
+        }
+
+        const depthLimit = 8; // Depth for pre-computation
+        let preComputedPositions = {};
+
+        // Function to convert a 2D board array into a string key
+        function getBoardKey(board) {
+            return board.flat().join("");
+        }
+        
+        // Function to convert a string key back into a 2D board array
+        function parseBoardKey(boardKey) {
+            const rows = 6; // Number of rows in Connect Four
+            const columns = 7; // Number of columns in Connect Four
+            const flatBoard = boardKey.split("").map(Number);
+        
+            const board = [];
+            for (let r = 0; r < rows; r++) {
+            board.push(flatBoard.slice(r * columns, (r + 1) * columns));
+            }
+            return board;
+        }
+        
+        function getPreComputedMove(board) {
+            const key = getBoardKey(board);
+            return preComputedPositions[key] || null;
+        }
+
+        // Minimax with Alpha-Beta Pruning
+        function minimax(board, depth, alpha, beta, maximizingPlayer) {
+            const winner = checkWinnerFromState(board);
+            if (winner !== null) {
+                return winner === playerRed ? 100 : -100;
+            }
+            if (isBoardFull(board) || depth === 0) {
+                return 0; // Draw or max depth reached
+            }
+
+            if (maximizingPlayer) {
+                let maxEval = -Infinity;
+                for (let col = 0; col < columns; col++) {
+                    if (board[0][col] === 0) {
+                        const newBoard = applyMove(board, col, playerRed);
+                        const evaluation = minimax(newBoard, depth - 1, alpha, beta, false);
+                        maxEval = Math.max(maxEval, evaluation);
+                        alpha = Math.max(alpha, evaluation);
+                        if (beta <= alpha) {
+                            break;
+                        } // Beta cut-off
+                    }
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (let col = 0; col < columns; col++) {
+                    if (board[0][col] === 0) {
+                        const newBoard = applyMove(board, col, playerYellow);
+                        const evaluation = minimax(newBoard, depth - 1, alpha, beta, true);
+                        minEval = Math.min(minEval, evaluation);
+                        beta = Math.min(beta, evaluation);
+                        if (beta <= alpha) {
+                            break;
+                        } // Alpha cut-off
+                    }
+                }
+                return minEval;
+            }
+        }
+
+        // Function to pre-compute moves for the first N plies
+        function preComputeMoves(initialBoard, maxDepth) {
+            console.log("computing...");
+            const queue = [{ board: initialBoard, depth: 0 }];
+            while (queue.length > 0) {
+                console.log("next board...");
+                const { board, depth: currentDepth } = queue.shift();
+                if (currentDepth >= maxDepth) continue;
+
+                const bestMove = findBestMove(board);
+                const boardKey = getBoardKey(board);
+                preComputedPositions[boardKey] = bestMove;
+
+                // Apply the best move to generate new board state
+                const newBoard = applyMove(
+                    board,
+                    bestMove,
+                    currentDepth % 2 === 0 ? playerRed : playerYellow
+                );
+                queue.push({ board: newBoard, depth: currentDepth + 1 });
+            }
+        }
+
+        // Example usage: Pre-compute moves for the first 7 plies
+        const initialState = [
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0],
+        ];
+
+        // Function to generate and display precomputed moves as text lines
+        function displayPrecomputedMoves() {
+            const precomputedData = Object.entries(preComputedPositions)
+                .map(([key, move]) => `preComputedPositions["${key}"] = ${move};`)
+                .join("\n");
+            document.getElementById("precomputed-moves").innerText = precomputedData;
+        }
+
+        function go() {
+            preComputeMoves(initialState, 1);
+        }
+
+        // Monte Carlo Tree Search Implementation
+        class Node {
+            constructor(state, parent = null) {
+                this.state = state; // The current board state
+                this.parent = parent; // The parent node in the tree
+                this.children = []; // The children nodes (possible future states)
+                this.wins = 0; // The number of wins for this node
+                this.visits = 0; // The number of visits to this node
+            }
+
+            // Method to add a child node
+            addChild(childNode) {
+                this.children.push(childNode);
+            }
+
+            // Method to get the UCT value of the node
+            getUCTValue(explorationParameter = 1.2) {
+                if (this.visits === 0) {
+                    return Infinity; // Return a high value for unvisited nodes
+                }
+                return (
+                    this.wins / this.visits +
+                    explorationParameter *
+                    Math.sqrt(Math.log(this.parent.visits) / this.visits)
+                );
+            }
+        }
+
+        // Function to simulate a random game from the given state
+        function simulateRandomGame(state) {
+            let currentState = state;
+
+            while (!isTerminal(currentState)) {
+                // Pre-check for immediate winning move for currentPlayer
+                let legalMoves = getLegalMoves(currentState);
+                const currentPlayer = getPlayerTurn(currentState);
+                let randomMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+                const opponent = currentPlayer === playerRed ? playerYellow : playerRed;
+                for (let move of legalMoves) {
+                    if (isWinningMove(currentState, move, currentPlayer)) {
+                        randomMove = move;
+                    }
+                }
+
+                // Pre-check for immediate blocking move against opponent
+                for (let move of legalMoves) {
+                    if (isWinningMove(currentState, move, opponent)) {
+                        randomMove = move;
+                    }
+                }
+                currentState = applyMove(
+                    currentState,
+                    randomMove,
+                    getPlayerTurn(currentState)
+                );
+            }
+            return getWinner(currentState);
+        }
+
+        // Function to determine if the state is terminal (game over)
+        function isTerminal(state) {
+            var playerWinning = checkWinnerFromState(state);
+            return playerWinning != null || isBoardFull(state);
+        }
+
+        // Function to get legal moves from the given state
+        function getLegalMoves(state) {
+            const legalMoves = [];
+            for (let c = 0; c < columns; c++) {
+                if (state[0][c] === 0) {
+                    legalMoves.push(c); // Add column index as a legal move
+                }
+            }
+            return legalMoves;
+        }
+
+
+        // Function to get the winner of the game from the given state
+        function getWinner(state) {
+            var playerWinning = checkWinnerFromState(state);
+            if (botIdentity == 1) {
+                if (playerWinning == playerRed) {
+                    return 1;
+                } else if (playerWinning == playerYellow) {
+                    return -1.5;
+                } else {
+                    return 0;
+                }
+            } else if (botIdentity == 2) {
+                if (playerWinning == playerRed) {
+                    return -1.5;
+                } else if (playerWinning == playerYellow) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            }
+        }
+
+        // MCTS implementation with pre-check for immediate threats
+        function mcts(rootState, illegalMoves = []) {
+            const rootNode = new Node(rootState);
+            const currentPlayer = getPlayerTurn(rootState);
+            const opponent = currentPlayer === playerRed ? playerYellow : playerRed;
+
+            // Pre-check for immediate winning move for currentPlayer
+            const legalMoves = getLegalMoves(rootState).filter(move => !illegalMoves.includes(move));
+            console.log("legal moves: " + legalMoves);
+            for (let move of legalMoves) {
+                if (isWinningMove(rootState, move, currentPlayer)) {
+                    console.log("winning move");
+                    return applyMove(rootState, move, currentPlayer); // Complete the winning move
+                }
+            }
+
+            // Pre-check for immediate blocking move against opponent
+            for (let move of legalMoves) {
+                if (isWinningMove(rootState, move, opponent)) {
+                    console.log("blocking move");
+                    return applyMove(rootState, move, currentPlayer); // Block opponent's winning move
+                }
+            }
+
+            var startTime = performance.now();
+            var duration = 3000; // 3 seconds in milliseconds
+            let iterations = 0;
+
+            while (performance.now() - startTime < duration) {
+                iterations++;
+                // Selection
+                let node = rootNode;
+                while (node.children.length > 0) {
+                    node = node.children.reduce((a, b) =>
+                        a.getUCTValue() > b.getUCTValue() ? a : b
+                    );
+                }
+
+                // Expansion
+                if (node.visits > 0) {
+                    const legalMoves = getLegalMoves(node.state).filter(move => !illegalMoves.includes(move));
+                    legalMoves.forEach((move) => {
+                        const newState = applyMove(node.state, move, getPlayerTurn(node.state));
+                        const childNode = new Node(newState, node);
+                        node.addChild(childNode);
+                    });
+                    if (node.children.length > 0) {
+                        node = node.children[Math.floor(Math.random() * node.children.length)];
+                    }
+                }
+
+                // Simulation
+                const result = simulateRandomGame(node.state);
+
+                // Backpropagation
+                while (node != null) {
+                    node.visits += 1;
+                    if (result === 1) {
+                        node.wins += 1;
+                    } else if (result === -1) {
+                        node.wins -= 1;
+                    }
+                    node = node.parent;
+                }
+            }
+            console.log(iterations);
+            // Select the best move
+            const bestChild = rootNode.children.reduce((a, b) =>
+                a.visits > b.visits ? a : b
+            );
+            return bestChild.state;
+        }
+
+        // Helper function to check if a move results in a win
+        function isWinningMove(state, move, player) {
+            const newState = applyMove(state, move, player);
+            return checkWinnerFromState(newState) === player;
+        }
+
+    </script>
+</head>
+<body>
+    <h1>Connect 4</h1>
+    <h2 id="winner"></h2>
+    <div id="board"></div>
+    <p>Bot is Yellow?</p>
+    <label class="switch">
+        <input type="checkbox" id="botIdentity" onclick="setBotYellow()" />
+        <span class="slider round"></span>
+    </label>
+    <div></div>
+    <button id="reset" onclick="setGame()">Reset Game</button>
+    <button id="makeBotMove" onclick="calculateBotMove(getBoard())">Make Bot Move</button>
+</body>
+</html>
